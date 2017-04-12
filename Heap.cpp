@@ -2,7 +2,6 @@
   //An implementation of a max heap that can store numbers
   //read in from a file or typed in by the user. Also displays the Heap visually
   #include <iostream>
-  #include <iomanip>
   #include <fstream>
   #include <string>
   #include <string.h>
@@ -11,7 +10,7 @@
   void insert(int heap[], int arrayLength, int number);
   int parent(int n);
   void printTree(int arrayLength, int heap[]);
-  void removeNode(int arrayLength, int heap[]);
+  void removeNode(int &arraySize, int array[100]);
 
   int main() {
     char* input = new char[80];
@@ -29,8 +28,8 @@
       array[a] = 0;
       heap[a] = 0;
     }
-    char contents[201];
-    int contentsLength = sizeof(contents)/sizeof(contents[0]);
+    char* contents = new char[201];
+
 
     //reads in by filename
     if(!strcmp("FILENAME", input)) {
@@ -44,30 +43,45 @@
           cout << "Unable to open the file ... exiting" << flush;
           return -1;
       }
-      infile.getline(contents, contentsLength, '\n');
+      infile.getline(contents, 1000, '\n');
     }
-
     //manually reads in the numbers
     else if(!strcmp("MANUAL", input)) {
       cout << "Enter in the numbers, space-separated." << endl;
-      cin.getline(contents, contentsLength, '\n');
       cin.ignore();
+      cin.getline(contents, 201);
+
     }
+    int contentsLength = strlen(contents);
     //index: a counter to track where to put the characters into the int array
     int index = -1;
-    cout << "Prinitng contents" << endl;
     for(int i = 0; i < contentsLength, contents[i] != '\0'; i++) {
-        if(contents[i] != ' ' && contents[i] != 13) {
-            index++;
-            cout << contents[i] << " " << endl;
-            array[index] = contents[i]-'0';
-
+        int temp = 0;
+        int multiplier = 1;
+        int* digits = new int[10];
+        int whichdigit = 9;
+        //sets all values to -1 for later use
+        for(int k = 0; k < 10; k++) {
+          digits[k] = -1;
         }
+        while(contents[i] != ' ' && contents[i] != 13 && i < contentsLength) {
+            digits[whichdigit] = contents[i] - '0';
+          //  cout << "copied in" << digits[whichdigit] << endl;
+            whichdigit--;
+            i++;
+        }
+      //  cout << "Printing digits" << endl;
+        whichdigit++;
+        while(digits[whichdigit] != -1 && whichdigit <= 9) {
+          temp += multiplier * digits[whichdigit];
+          multiplier *= 10;
+          whichdigit++;
+        }
+    //    cout << "Added value: "  << temp << endl;
+        index++;
+        array[index] = temp;
     }
-    cout << "Index: " << index << endl;
-    for(int i = 0; i <= index; i++) {
-        cout << "(" << array[i] << ")" << flush;
-    }
+
     cout << endl;
     int arrayLength = 0;
     //iterates through the integer array and inserts things into the heaparray
@@ -75,66 +89,74 @@
       insert(heap, arrayLength, array[b]);
       arrayLength++;
     }
-
-
     printTree(arrayLength, heap);
+    cout << "Printing out heap..." << endl;
     removeNode(arrayLength, heap);
     return 0;
 }
 //inserts a integer into the array, maintaining heap
 void insert(int heap[], int arrayLength, int number) {
-  cout << "Inserting.. " << number << endl;
+//  cout << "Inserting.. " << number << endl;
   int n = arrayLength;
   heap[n] = number;
   while(!n <=0 && heap[n] > heap[parent(n)]){
-    cout << "Swapping: " << heap[n] << " and" << heap[parent(n)]<< endl;
+  //  cout << "Swapping: " << heap[n] << " and" << heap[parent(n)]<< endl;
     int temp = heap[n];
     heap[n] = heap[parent(n)];
     heap[parent(n)] = temp;
     n = parent(n);
   }
-  cout << "\nPrinting array directly" << endl;
-  for(int i = 0; i <= arrayLength; i++) {
-    cout << heap[i] << " " << flush;
-  }
-  cout << endl;
+  //  cout << "\nPrinting array directly" << endl;
+
 }
 
 //removes the root node of the max heap (it is at array index 0)
 //And also reorders the reset of the array to retain heap status
-void removeNode(int arrayLength, int heap[]) { //WHAT IF BOTH CHILDREN ARE THE SAME IN VALUE, shift right one up?
-    cout << "Removing Nodes..." << endl;
+void removeNode(int &arraySize, int array[100]) {
 
-    if(arrayLength == 0) {
-      return;
-    }
-    bool finished = false;
+  if(arraySize == 0){
+    return;
+  }
+  while(arraySize != 0){
+    cout << array[0] << " " << flush;
+    array[0] = array[arraySize - 1];
+    arraySize--;
     int index = 0;
-    //iterates through updating the array to maintain heap
-    while(!finished) {
-      cout << heap[0] << " " << endl;
-      if(2*index + 1 > arrayLength - 1) {
-        break;
+    int maxChild;
+    int moveDown =1;
+    while (moveDown ==1) {
+      //Case: No Child
+      if(2*index + 1 > arraySize - 1){
+        maxChild = -1;
       }
-      //if there is only a left child
-      else if(2*index + 1 <= arrayLength - 1 && 2*index + 2 > arrayLength-1) {
-        break;
+      //Left Child
+      else if(2*index + 1 <= arraySize - 1 && 2*index + 2 > arraySize - 1){
+        maxChild = 2*index + 1;
       }
-      //if the right child is greater than or equal to left
-      //shifts the right child up to the top
-      else if(heap[2*index+2] >= heap[2*index+1]) {
-        heap[index] = heap[2*index+2];
-        index = 2*index + 2;
+      //Left Child is larger
+      else if(array[2*index + 1] >= array[2*index + 2]){
+        maxChild = 2*index + 1;
       }
-      //if left child is greater than right
-      else if(heap[2*index+1] > heap[2*index+2]) {
-        heap[index] = heap[2*index+1];
-        index = 2*index + 1;
+      //Right Child is larger
+      else{
+	maxChild = 2*index + 2;
       }
-      arrayLength--;
-     }
-}
+      //Switch with the larger child
+      if(maxChild > 0 && array[index] < array[maxChild]){
+	int temp = 0;
+	temp = array[index];
+	array[index] = array[maxChild];
+	array[maxChild] = temp;
+	index = maxChild;
+      }
+      else
+	{ // it is larger than child, stop moveDown
+	  moveDown =0;
+	}
+    }
 
+  }
+}
 //calculates and returns the parent index of a node at index n
 int parent(int n) {
   if(n % 2 == 0) {
